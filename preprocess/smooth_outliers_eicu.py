@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 
 
 def load_bp(num_of_pats=300, bp_max=160, bp_min=30):
@@ -27,13 +29,17 @@ def load_bp(num_of_pats=300, bp_max=160, bp_min=30):
     # filter drug to include only drugnames that start with "Norepinephrine"
     drug = drug[drug['drugname'].str.startswith("Norepinephrine")]
 
+    pat_at_stage['with NOR'] = drug['patientunitstayid'].nunique()
+
     # remove patients who recieved other vasopressors
     drug = drug[~drug['patientunitstayid'].isin(other_drugs['patientunitstayid'])]
 
     # sort drug by patientunitstayid and drugstartoffset
     drug = drug.sort_values(by=["patientunitstayid", "infusionoffset"])
 
-    bp = pd.read_csv("/filtered_bp_eicu.csv")
+    pat_at_stage['with only NOR'] = drug['patientunitstayid'].nunique()
+
+    bp = pd.read_csv("../preprocess/filtered_bp_eicu.csv")
     bp = bp[bp["cur_bp"] < bp_max]
     bp = bp[bp["cur_bp"] > bp_min]
     bp = bp.sort_values(by=["stay_id", "cur_bp_time"])
@@ -216,6 +222,25 @@ def add_rolling_statistics(bp_df: pd.DataFrame, window_size=10):
                                                                                                                     drop=True)
     bp_df[f'rolling_{window_size}_median'] = bp_df.groupby("stay_id")["cur_bp"].rolling(
         window_size, center=True).median().reset_index(0, drop=True)
+
+    bp_df[f'rolling_{window_size}_mean_otj'] = bp_df.groupby("stay_id")["otj_filter"].rolling(window_size,
+                                                                                              center=True).mean().reset_index(
+        0,
+        drop=True)
+    bp_df[f'rolling_{window_size}_std_otj'] = bp_df.groupby("stay_id")["otj_filter"].rolling(window_size,
+                                                                                             center=True).std().reset_index(
+        0,
+        drop=True)
+    bp_df[f'rolling_{window_size}_min_otj'] = bp_df.groupby("stay_id")["otj_filter"].rolling(window_size,
+                                                                                             center=True).min().reset_index(
+        0,
+        drop=True)
+    bp_df[f'rolling_{window_size}_max_otj'] = bp_df.groupby("stay_id")["otj_filter"].rolling(window_size,
+                                                                                             center=True).max().reset_index(
+        0,
+        drop=True)
+    bp_df[f'rolling_{window_size}_median_otj'] = bp_df.groupby("stay_id")["otj_filter"].rolling(
+        window_size, center=True).median().reset_index(0, drop=True)
     return bp_df
 
 
@@ -225,7 +250,8 @@ def filter_by_nor(bp_df, break_size=30, min_hrs_to_nor=12, max_hrs_from_admissio
     bp_df = bp_df[bp_df['drugrate'] <= max_nor]
 
     # filter all entries after 48 hours
-    first_measurment_time = bp_df.groupby('stay_id').apply(lambda x: x['cur_bp_time'].min())
+    first_measurment_time = bp_df[['stay_id', 'cur_bp_time', 'drugrate']].groupby('stay_id').apply(
+        lambda x: x['cur_bp_time'].min())
     bp_df = bp_df.groupby('stay_id').apply(
         lambda x: x[(x['cur_bp_time'] <= first_measurment_time[x.name] + max_hrs_from_admission * 60)]).reset_index(
         level=0, drop=True)
@@ -235,8 +261,9 @@ def filter_by_nor(bp_df, break_size=30, min_hrs_to_nor=12, max_hrs_from_admissio
     patients_with_first_nor_under_24 = first_not_time[first_not_time <= min_hrs_to_nor * 60].index
     bp_df = bp_df[bp_df['stay_id'].isin(patients_with_first_nor_under_24)]
 
-    bp_df['nor_bigger_than_0'] = bp_df.groupby('stay_id').apply(lambda x: x['drugrate'] > 0).reset_index(level=0,
-                                                                                                         drop=True)
+    pat_at_stage['received NOR within 24 hours'] = bp_df['stay_id'].nunique()
+
+    bp_df['nor_bigger_than_0'] = bp_df['drugrate'] > 0
     # find the largest cur_bp_time that nor_bigger_than_0 is true
     last_nor_time = bp_df.groupby('stay_id').apply(lambda x: x.loc[x['nor_bigger_than_0'], 'cur_bp_time'].max())
 
@@ -252,7 +279,7 @@ def filter_by_nor(bp_df, break_size=30, min_hrs_to_nor=12, max_hrs_from_admissio
     # filter all rows with cummax_interval that is larger than 30
     bp_df = bp_df[bp_df['cummax_interval'] <= break_size]
 
-    no_nor = (bp_df.groupby('stay_id').apply(lambda x: (x['drugrate']).sum() == 0))
+    no_nor = (bp_df.groupby('stay_id')['drugrate'].transform(lambda x: x.sum() == 0))
     no_nor = no_nor[no_nor].index.tolist()
     bp_df = bp_df[~bp_df['stay_id'].isin(no_nor)]
 
@@ -261,17 +288,181 @@ def filter_by_nor(bp_df, break_size=30, min_hrs_to_nor=12, max_hrs_from_admissio
     short_stay = bp_by_stay_id[bp_by_stay_id['cur_bp_time'] < min_time_of_stay_entries].index.tolist()
     bp_df = bp_df[~bp_df['stay_id'].isin(short_stay)]
 
+    pat_at_stage['6 hours of uninterrupted valid MAP'] = bp_df['stay_id'].nunique()
+
     return bp_df
 
 
+def load_bp_salz(bp_max=160, bp_min=30):
+    d703 = pd.read_csv('data_float_m_703.csv')
+    d703 = d703[d703['Offset'] % 300 == 0]
+    d703 = d703[d703['Offset'] <= 172800]
+
+    d_cases = pd.read_csv('cases.csv.gz', compression='gzip')
+    d_cases['WeightOnAdmission'] /= 1000
+
+    medication = pd.read_csv('medication.csv.gz', compression='gzip')
+    vas = medication[medication['DrugID'] == 1550]
+    vas_ids = list(vas['CaseID'].unique())
+    dop = medication[medication['DrugID'] == 1618]
+    dop_ids = list(dop['CaseID'].unique())
+    epi = medication[medication['DrugID'] == 1502]
+    epi_ids = list(epi['CaseID'].unique())
+
+    other_drugs_ids = list(set(vas_ids + dop_ids + epi_ids))
+    d1562 = medication[medication['DrugID'] == 1562]
+    d1562 = d1562[d1562['OffsetDrugEnd'] <= 172800]
+    d1562 = d1562[~d1562['CaseID'].isin(other_drugs_ids)]
+
+    d1562 = medication[medication['DrugID'] == 1562]
+    d1562 = d1562[d1562['OffsetDrugEnd'] <= 172800]
+
+    id_weight_dict = dict(zip(d_cases['CaseID'], d_cases['WeightOnAdmission']))
+    pat_at_stage['with NOR'] = d1562['CaseID'].nunique()
+    intersection_ids = list(set(d703['CaseID'].unique()).intersection(d1562['CaseID'].unique()))
+
+    # Create a boolean mask to filter rows from d703 and d1562
+    mask1 = d703['CaseID'].isin(intersection_ids)
+    mask2 = d1562['CaseID'].isin(intersection_ids)
+
+    # Apply the boolean mask to filter rows from d703 and d1562
+    df1 = d703.loc[mask1, ['CaseID', 'Offset', 'Val']]
+    df2 = d1562.loc[mask2, ['CaseID', 'Offset', 'OffsetDrugEnd', 'AmountPerMinute']]
+
+    # Concatenate df1 and df2
+    df3 = pd.concat([df1, df2], axis=0)
+
+    # Concatenate df3 with df4
+    df3.reset_index(drop=True, inplace=True)
+
+    df3['Offset'] /= 60
+    df3['OffsetDrugEnd'] /= 60
+    df3['AmountPerMinute'] *= 1000000
+
+    df3.rename(columns={
+        'CaseID': 'stay_id',
+        'Val': 'cur_bp',  # Rename 'Val' to 'Value'
+        'Offset': 'cur_bp_time',  # Rename 'Drug Rate' to 'Rate'
+        'AmountPerMinute': 'drugrate'  # Rename 'Offset' to 'Offset Range'
+    }, inplace=True)
+
+    death_dict = {2202: 'ICU survivor', 2212: 'Unknown', 2215: 'ICU non-survivor'}
+    death_per_pat_dict = dict(zip(d_cases['CaseID'], d_cases['DischargeState']))
+
+    df3['DischargeState'] = df3['stay_id'].map(death_per_pat_dict)
+    df3['DischargeState'] = df3['DischargeState'].map(death_dict)
+
+    df3['weight'] = df3['stay_id'].map(id_weight_dict)
+
+    df3.to_csv('five_minutes_resolution.csv', index=False)
+
+    bp_df = pd.read_csv('five_minutes_resolution.csv')
+    pat_at_stage['with only NOR'] =  bp_df.stay_id.nunique()
+    bp_df = bp_df.sort_values(['stay_id', 'cur_bp_time'])
+    # print(bp_df.drugrate.isna().sum())
+    bp_df['drugrate'] = bp_df.groupby('stay_id')['drugrate'].transform(lambda x: x.ffill())
+    # print(bp_df.drugrate.isna().sum())
+    # print the ampunt of stay_id's that have more than 1 nor measurement and the amount of stay_id's that have 0 nor measurements
+    # print(bp_df.groupby('stay_id')['drugrate'].count().value_counts())
+    # filter all stay_id's that have 0 nor measurements
+    bp_df = bp_df.groupby('stay_id').filter(lambda x: x['drugrate'].count() > 0)
+    bp_df = bp_df.groupby('stay_id').filter(lambda x: x['drugrate'].count() > 0)
+    bp_df = bp_df[bp_df['cur_bp'] <= bp_max]
+    bp_df = bp_df[bp_df['cur_bp'] >= bp_min]
+    bp_df = bp_df.loc[~bp_df['cur_bp'].isna(), :]
+    # add a column with the time difference between the current and the previous measurement called interval
+    bp_df['interval'] = bp_df.groupby('stay_id')['cur_bp_time'].diff()
+
+    return bp_df
+
+
+global pat_at_stage
 if __name__ == "__main__":
-    big_bp = load_bp(num_of_pats=50)
-    big_bp = filter_by_nor(big_bp, break_size=30)
+    # pat_at_stage = {}
+    # big_bp = load_bp(num_of_pats=0)
+    # big_bp = filter_by_nor(big_bp, break_size=30)
+    #
+    # # make bar plot of the amount of patients at each stage with sorted values using plotly
+    # pat_at_stage = pd.DataFrame.from_dict(pat_at_stage, orient='index', columns=['Amount of Patients'])
+    # pat_at_stage = pat_at_stage.sort_values(by='Amount of Patients', ascending=False)
+    #
+    # fig = go.Figure()
+    # fig.add_trace(go.Bar(x=pat_at_stage.index, y=pat_at_stage['Amount of Patients']))
+    # # add value labels on top of the bars and make them bigger
+    # fig.update_traces(texttemplate='%{y}', textposition='outside', textfont_size=20)
+    # fig.update_layout(uniformtext_minsize=20, uniformtext_mode='hide')
+    #
+    # fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
+    # # fig.update_layout(title_text='Amount of Patients at Each Stage', title_x=0.5)
+    # fig.update_layout(xaxis_title='Stage', yaxis_title='Amount of Patients')
+    # # make fig size  big enough to show all labels horizontally
+    # fig.update_layout(height=1000, width=1500)
+    # # make the labels horizontal
+    # fig.update_xaxes(tickangle=0)
+    # # make tick labels bigger
+    # fig.update_layout(xaxis=dict(tickfont=dict(size=20)))
+    # fig.update_layout(yaxis=dict(tickfont=dict(size=20)))
+    #
+    # # make bar width bigger
+    # fig.update_traces(marker=dict(line=dict(width=4)))
+    #
+    # # make axis titles bigger
+    # fig.update_layout(xaxis=dict(title=dict(font=dict(size=20))))
+    # fig.update_layout(yaxis=dict(title=dict(font=dict(size=20))))
+    #
+    # fig.show()
+    #
+    # fig.write_html("../preprocess/patients_at_each_stage.html")
+    # fig.write_image("../preprocess/patients_at_each_stage.png")
+    #
+    # big_bp = remove_one_time_jumps(big_bp)
+    #
+    # big_bp = smooth_outliers(big_bp, threshold_constant=1.5)
+    # for i in range(2, 11):
+    #     big_bp = add_rolling_statistics(big_bp, window_size=i)
+    #
+    # big_bp.to_csv("../preprocess/smooth_bp_eicu2.csv", index=False)
 
-    big_bp = remove_one_time_jumps(big_bp)
+    pat_at_stage = {}
 
-    big_bp = smooth_outliers(big_bp, threshold_constant=1.5)
+    big_bp_salz = load_bp_salz()
+    big_bp_salz = filter_by_nor(big_bp_salz, break_size=30)
+    # make bar plot of the amount of patients at each stage with sorted values using plotly
+    pat_at_stage = pd.DataFrame.from_dict(pat_at_stage, orient='index', columns=['Amount of Patients'])
+    pat_at_stage = pat_at_stage.sort_values(by='Amount of Patients', ascending=False)
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=pat_at_stage.index, y=pat_at_stage['Amount of Patients']))
+    # add value labels on top of the bars and make them bigger
+    fig.update_traces(texttemplate='%{y}', textposition='outside', textfont_size=20)
+    fig.update_layout(uniformtext_minsize=20, uniformtext_mode='hide')
+
+    fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
+    # fig.update_layout(title_text='Amount of Patients at Each Stage', title_x=0.5)
+    fig.update_layout(xaxis_title='Stage', yaxis_title='Amount of Patients')
+    # make fig size  big enough to show all labels horizontally
+    fig.update_layout(height=1000, width=1500)
+    # make the labels horizontal
+    fig.update_xaxes(tickangle=0)
+    # make tick labels bigger
+    fig.update_layout(xaxis=dict(tickfont=dict(size=20)))
+    fig.update_layout(yaxis=dict(tickfont=dict(size=20)))
+
+    # make bar width bigger
+    fig.update_traces(marker=dict(line=dict(width=4)))
+
+    # make axis titles bigger
+    fig.update_layout(xaxis=dict(title=dict(font=dict(size=20))))
+    fig.update_layout(yaxis=dict(title=dict(font=dict(size=20))))
+
+    fig.show()
+
+    fig.write_html("../preprocess/patients_at_each_stage_zalz.html")
+    fig.write_image("../preprocess/patients_at_each_stage_zalz.png")
+
+    big_bp_salz = remove_one_time_jumps(big_bp_salz)
+    big_bp_salz = smooth_outliers(big_bp_salz, threshold_constant=1.5)
     for i in range(2, 11):
-        big_bp = add_rolling_statistics(big_bp, window_size=i)
+        big_bp_salz = add_rolling_statistics(big_bp_salz, window_size=i)
 
-    big_bp.to_csv("../preprocess/smooth_bp_eicu2.csv", index=False)
+    big_bp_salz.to_csv("../preprocess/smooth_bp_salz.csv", index=False)
