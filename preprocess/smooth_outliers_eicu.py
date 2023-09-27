@@ -33,7 +33,7 @@ def load_bp(num_of_pats=300, bp_max=160, bp_min=30):
     # sort drug by patientunitstayid and drugstartoffset
     drug = drug.sort_values(by=["patientunitstayid", "infusionoffset"])
 
-    bp = pd.read_csv("../preprocess/filtered_bp_eicu.csv")
+    bp = pd.read_csv("/filtered_bp_eicu.csv")
     bp = bp[bp["cur_bp"] < bp_max]
     bp = bp[bp["cur_bp"] > bp_min]
     bp = bp.sort_values(by=["stay_id", "cur_bp_time"])

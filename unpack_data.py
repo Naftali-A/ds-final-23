@@ -18,5 +18,5 @@ def recurse_and_gunzip(root):
                 gunzip(root + "/" + f, root + "/" + f.replace(".gz", ""))
 
 
-recurse_and_gunzip('../data')
+recurse_and_gunzip('data')
 
