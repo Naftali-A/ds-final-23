@@ -124,13 +124,13 @@ def heatmap_and_peak_scatter(df, file_name, split_funcs, max_x,
                           )
 
         fig.write_html(
-            f'graphs/heatmaps/html/{max_x}/{file_name}_bin_{Y_BIN_SIZE}_{i}.html')
+            f'../plots/{max_x}/html/heatmaps/{file_name}_bin_{Y_BIN_SIZE}_{i}.html')
         fig.write_image(
-            f'graphs/heatmaps/img/{max_x}/{file_name}_bin_{Y_BIN_SIZE}_{i}.png')
+            f'../plots/{max_x}/img/heatmaps/{file_name}_bin_{Y_BIN_SIZE}_{i}.png')
 
 
 # Create bar plot of binned MAP with box plot of drugrate for each bin
-def box_plot(data, file_name, split_funcs, title):
+def box_plot(data, file_name, split_funcs, title, max_x=80):
     dfs, titles = apply_split_functions(data, split_funcs)
     fig = make_subplots(rows=2, cols=1, vertical_spacing=0.02)
 
@@ -147,8 +147,8 @@ def box_plot(data, file_name, split_funcs, title):
     fig.update_layout(xaxis=dict(side='top'),
                       title=title)
 
-    fig.write_html(f'graphs/boxPlots/{file_name}.html')
-    fig.write_image(f'graphs/boxPlots/{file_name}.png')
+    fig.write_html(f'../plots/{max_x}/html/boxPlots/{file_name}.html')
+    fig.write_image(f'../plots/{max_x}/img/boxPlots/{file_name}.png')
 
 
 def corr_plot(data, file_name, split_funcs, max_x, title):
@@ -179,8 +179,8 @@ def corr_plot(data, file_name, split_funcs, max_x, title):
 
 
     # fig.update_layout(title=title)
-    fig.write_html(f'graphs/correlation-heatmaps/html/{max_x}/{file_name}.html')
-    fig.write_image(f'graphs/correlation-heatmaps/img/{max_x}/{file_name}.png')
+    fig.write_html(f'../plots/{max_x}/html/correlation-heatmaps/{file_name}.html')
+    fig.write_image(f'../plots/{max_x}/img/correlation-heatmaps/{file_name}.png')
 
 # Create scatter plot of data with fitted polynomial of selected degrees
 def poly_fit_plot(data, file_name, split_funcs, degrees, title, max_x=None,
@@ -258,11 +258,11 @@ def get_peak_curve(data, file_name, split_funcs, degrees, title, max_x,
             showlegend=True,
             legend=dict(x=1.1),
         )
-        peak_fig.write_html(f'graphs/fitted-curves/html/{max_x}/{file_name}_{i}.html')
-        peak_fig.write_image(f'graphs/fitted-curves/img/{max_x}/{file_name}_{i}.png')
+        peak_fig.write_html(f'../plots/{max_x}/html/fitted-curves/{file_name}_{i}.html')
+        peak_fig.write_image(f'../plots/{max_x}/img/fitted-curves/{file_name}_{i}.png')
 
 
-def mean_var_curves(data, file_name, split_funcs, degrees, title):
+def mean_var_curves(data, file_name, split_funcs, degrees, title, max_x=70):
     dfs, titles = apply_split_functions(data, split_funcs)
     rows = len(titles)
     mean_fig = make_subplots(rows, 1, subplot_titles=titles)
@@ -328,12 +328,12 @@ def mean_var_curves(data, file_name, split_funcs, degrees, title):
     )
 
     # Show the plot
-    full_fig.write_html(f'graphs/fitted-curves/full_{file_name}.html')
-    mean_fig.write_html(f'graphs/fitted-curves/mean_{file_name}.html')
-    var_fig.write_html(f'graphs/fitted-curves/var_{file_name}.html')
+    full_fig.write_html(f'../plots/{max_x}/html/fitted-curves/full_{file_name}.html')
+    mean_fig.write_html(f'../plots/{max_x}/html/fitted-curves/mean_{file_name}.html')
+    var_fig.write_html(f'../plots/{max_x}/html/fitted-curves/var_{file_name}.html')
 
 
-def create_patient_trajectories(bp, trajectories):
+def create_patient_trajectories(bp, trajectories, max_x=80):
     patient_ids = bp["stay_id"].value_counts()[
         bp["stay_id"].value_counts() > 0].index
     i = 0
@@ -366,8 +366,8 @@ def create_patient_trajectories(bp, trajectories):
         fig.update_yaxes(title_text='NOR RATE', secondary_y=True,
                          showgrid=False)
 
-        fig.write_html(f'graphs/MAP-NOR-PAT/MAP-NOR-{pat}.html')
-        fig.write_image(f'graphs/MAP-NOR-PAT/MAP-NOR-{pat}.png')
+        fig.write_html(f'../plots/{max_x}/html/MAP-NOR-PAT/MAP-NOR-{pat}.html')
+        fig.write_image(f'../plots/{max_x}/img/MAP-NOR-PAT/MAP-NOR-{pat}.png')
 
 
 def drugrate_hist(df, max_x, bin_size):
