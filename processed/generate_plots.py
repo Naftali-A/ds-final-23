@@ -1,7 +1,8 @@
-from FinalProjDS.plots23.spliters import *
+from spliters import *
 import pandas as pd
-from FinalProjDS.plots23.creators import *
+from creators import *
 from sklearn.linear_model import LinearRegression
+import numpy as np
 
 file_names = {
     'poly_fit': 'poly_fit',
@@ -61,35 +62,9 @@ def generate_sal_plots(df, max_xs, min_y, file_name):
                                  f"{str(max_x)}",
                                  [
                                      get_bp_by_nor_change_with_direction,
-                                     # get_bp_by_unit
                                  ],
                                  max_x,
                                  )
-
-        corr_plot(filtered_map,
-                  f"{file_name}_"
-                  f"{file_names['corr']}_"
-                  f"{file_names['unit']}_"
-                  f"{file_names['changes']}_"
-                  f"{str(max_x)}",
-                  [
-                      get_bp_by_nor_change_with_direction,
-                      # get_bp_by_unit
-                  ],
-                  max_x,
-                  f"{titles['corr']} "
-                  f"{titles['filtered']}{str(max_x)} "
-                  f"{titles['unit']} "
-                  f"{titles['changes']}")
-
-        corr_plot(filtered_map,
-                  f"{file_name}_"
-                  f"{file_names['corr']}_"
-                  f"{str(max_x)}",
-                  [default_spliter],
-                  max_x,
-                  f"{titles['corr']} "
-                  f"{titles['filtered']}{str(max_x)}")
 
 
 def generate_plots(df, max_xs, normalize, sal):
@@ -106,8 +81,6 @@ def generate_plots(df, max_xs, normalize, sal):
         for max_x in max_xs:
             filtered_drugrate = filter_drugrate(df, min_y, 50)
             filtered_map = filter_map(filtered_drugrate, 30, max_x)
-            # drugrate_hist(filtered_map, max_x, 0.1)
-            # drugrate_hist(filtered_map, max_x, 0.05)
 
             poly_fit_plot(filtered_map,
                           f"{file_name}_"
@@ -123,76 +96,48 @@ def generate_plots(df, max_xs, normalize, sal):
                           peak=True,
                           weighted=False,
                           )
-            # poly_fit_plot(filtered_map,
-            #               file_names['poly_fit'],
-            #               [get_bp_by_nor_change_with_direction,
-            #                get_bp_by_unit],
-            #               [1],
-            #               titles['poly_fit'],
-            #               max_x,
-            #               peak=True,
-            #               weighted=True,
-            #               )
 
-            # heatmap_and_peak_scatter(filtered_map,
-            #                          f"{file_name}_"
-            #                          f"{file_names['heatmap']}_"
-            #                          f"{file_names['unit']}_"
-            #                          f"{file_names['changes']}_"
-            #                          f"{str(max_x)}",
-            #                          [
-            #                              get_bp_by_nor_change_with_direction,
-            #                              get_bp_by_unit
-            #                          ],
-            #                          max_x,
-            #                          )
+            heatmap_and_peak_scatter(filtered_map,
+                                     f"{file_name}_"
+                                     f"{file_names['heatmap']}_"
+                                     f"{file_names['unit']}_"
+                                     f"{file_names['changes']}_"
+                                     f"{str(max_x)}",
+                                     [
+                                         get_bp_by_nor_change_with_direction,
+                                         get_bp_by_unit
+                                     ],
+                                     max_x,
+                                     )
 
-            # corr_plot(filtered_map,
-            #           f"{file_name}_"
-            #           f"{file_names['corr']}_"
-            #           f"{file_names['unit']}_"
-            #           f"{file_names['changes']}_"
-            #           f"{str(max_x)}",
-            #           [
-            #               get_bp_by_nor_change_with_direction,
-            #            get_bp_by_unit
-            #           ],
-            #           max_x,
-            #           f"{titles['corr']} "
-            #           f"{titles['filtered']}{str(max_x)} "
-            #           f"{titles['unit']} "
-            #           f"{titles['changes']}")
-            #
-            # corr_plot(filtered_map,
-            #           f"{file_name}_"
-            #           f"{file_names['corr']}_"
-            #           f"{file_names['unit']}_"
-            #           f"{str(max_x)}",
-            #           [get_bp_by_unit],
-            #           max_x,
-            #           f"{titles['corr']} "
-            #           f"{titles['filtered']}{str(max_x)} "
-            #           f"{titles['unit']}")
-            #
-            # corr_plot(filtered_map,
-            #           f"{file_name}_"
-            #           f"{file_names['corr']}_"
-            #           f"{str(max_x)}",
-            #           [default_spliter],
-            #           max_x,
-            #           f"{titles['corr']} "
-            #           f"{titles['filtered']}{str(max_x)}")
+            corr_plot(filtered_map,
+                      f"{file_name}_"
+                      f"{file_names['corr']}_"
+                      f"{file_names['unit']}_"
+                      f"{file_names['changes']}_"
+                      f"{str(max_x)}",
+                      [
+                          get_bp_by_nor_change_with_direction,
+                       get_bp_by_unit
+                      ],
+                      max_x,
+                      f"{titles['corr']} "
+                      f"{titles['filtered']}{str(max_x)} "
+                      f"{titles['unit']} "
+                      f"{titles['changes']}")
+            
+            create_patient_trajectories(bp, 10)
+
+            # drugrate_hist(filtered_map, max_x, 0.1)
+            # drugrate_hist(filtered_map, max_x, 0.05)
 
 
 if __name__ == "__main__":
     bp = pd.read_csv('../preprocess/smooth_bp_eicu2.csv')
-    # bp['cur_bp'] = bp['otj_filter']
-    # print(bp['cur_bp'].isna().sum(), bp.shape)
     bp['drugrate'] = bp['drugrate'].fillna(0)  # fill na with 0
-    # generate_plots(bp, [70, 80], normalize=True, sal=False)
+    generate_plots(bp, [70, 80], normalize=True, sal=False)
     #
     # sal_bp = pd.read_csv('../preprocess/smooth_bp_salz_small.csv')
     # sal_bp['cur_bp'] = sal_bp['otj_filter']
     # sal_bp['drugrate'] = sal_bp['drugrate'].fillna(0)  # fill na with 0
     # generate_plots(sal_bp, [70, 80], normalize=True, sal=True)
-    create_patient_trajectories(bp, 10)
