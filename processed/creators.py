@@ -84,6 +84,7 @@ def plot_nor_vs_map(df, x_bin_size, y_bin_size, j, rows, max_x):
         z=hist,  # Assign the histogram counts to the 'z' property
         colorscale='Viridis',
         colorbar=dict(
+            title="frequency",
             # thickness=15,
             x=-0.1, )
         # y=colorbar_y, len=length)
@@ -111,9 +112,9 @@ def heatmap_and_peak_scatter(df, file_name, split_funcs, max_x,
         fig.add_trace(heatmap, row=1, col=1)
         fig.add_trace(scatter, row=1, col=2)
 
-        fig.update_xaxes(title_text='MAP')
+        fig.update_xaxes(title_text='MAP (mmHg)')
         fig.update_xaxes(tickmode='linear', dtick=1, range=[55, max_x], col=2)
-        fig.update_yaxes(title_text='NOR RATE', tickmode='linear',
+        fig.update_yaxes(title_text='NOR RATE (mcg/min)', tickmode='linear',
                          dtick=Y_BIN_SIZE * 5, col=2)
 
         fig.update_layout(height=400, width=1000,
@@ -249,9 +250,9 @@ def get_peak_curve(data, file_name, split_funcs, degrees, title, max_x,
             fit_trace = get_fit_trace(coefficients, degree, data_trace.x)
             peak_fig.add_trace(fit_trace)
 
-        peak_fig.update_yaxes(title_text='MAP', tickmode='linear', dtick=5,
+        peak_fig.update_yaxes(title_text='MAP (mmHg)', tickmode='linear', dtick=5,
                               range=[55, max_x])
-        peak_fig.update_xaxes(title_text='NOR RATE', tickmode='linear',
+        peak_fig.update_xaxes(title_text='NOR RATE (mcg/min)', tickmode='linear',
                               dtick=0.5, )
         peak_fig.update_layout(
             # title=title,
@@ -347,9 +348,7 @@ def create_patient_trajectories(bp, trajectories, max_x=80):
         if i > trajectories:
             break
         fig = make_subplots(specs=[[{'secondary_y': True}]])
-        # fig.add_trace(go.Scatter(x=data['cur_bp'], y=data['drugrate'],
-        #                          mode='markers+lines', name='MAP VS NOR'),
-        #               row=1, col=1, secondary_y=False)
+
         fig.add_trace(
             go.Scatter(x=data['cur_bp_time'], y=data['cur_bp'], mode='lines',
                        name='MAP Over Time'), secondary_y=False)
@@ -360,10 +359,10 @@ def create_patient_trajectories(bp, trajectories, max_x=80):
 
         fig.update_layout(title=f'MAP Vs NOR Infusion Rate For StayId: {pat}')
 
-        fig.update_xaxes(title_text='Time')
+        fig.update_xaxes(title_text='Time (minutes from admission)')
 
-        fig.update_yaxes(title_text='MAP', secondary_y=False)
-        fig.update_yaxes(title_text='NOR RATE', secondary_y=True,
+        fig.update_yaxes(title_text='MAP (mmHg)', secondary_y=False)
+        fig.update_yaxes(title_text='NOR RATE (mcg/min)', secondary_y=True,
                          showgrid=False)
 
         fig.write_html(f'../plots/{max_x}/html/MAP-NOR-PAT/MAP-NOR-{pat}.html')
