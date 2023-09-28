@@ -378,50 +378,50 @@ def load_bp_salz(bp_max=160, bp_min=30):
 
 global pat_at_stage
 if __name__ == "__main__":
-    # pat_at_stage = {}
-    # big_bp = load_bp(num_of_pats=0)
-    # big_bp = filter_by_nor(big_bp, break_size=30)
-    #
-    # # make bar plot of the amount of patients at each stage with sorted values using plotly
-    # pat_at_stage = pd.DataFrame.from_dict(pat_at_stage, orient='index', columns=['Amount of Patients'])
-    # pat_at_stage = pat_at_stage.sort_values(by='Amount of Patients', ascending=False)
-    #
-    # fig = go.Figure()
-    # fig.add_trace(go.Bar(x=pat_at_stage.index, y=pat_at_stage['Amount of Patients']))
-    # # add value labels on top of the bars and make them bigger
-    # fig.update_traces(texttemplate='%{y}', textposition='outside', textfont_size=20)
-    # fig.update_layout(uniformtext_minsize=20, uniformtext_mode='hide')
-    #
-    # fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
-    # # fig.update_layout(title_text='Amount of Patients at Each Stage', title_x=0.5)
-    # fig.update_layout(xaxis_title='Stage', yaxis_title='Amount of Patients')
-    # # make fig size  big enough to show all labels horizontally
-    # fig.update_layout(height=1000, width=1500)
-    # # make the labels horizontal
-    # fig.update_xaxes(tickangle=0)
-    # # make tick labels bigger
-    # fig.update_layout(xaxis=dict(tickfont=dict(size=20)))
-    # fig.update_layout(yaxis=dict(tickfont=dict(size=20)))
-    #
-    # # make bar width bigger
-    # fig.update_traces(marker=dict(line=dict(width=4)))
-    #
-    # # make axis titles bigger
-    # fig.update_layout(xaxis=dict(title=dict(font=dict(size=20))))
-    # fig.update_layout(yaxis=dict(title=dict(font=dict(size=20))))
-    #
-    # fig.show()
-    #
-    # fig.write_html("../preprocess/patients_at_each_stage.html")
-    # fig.write_image("../preprocess/patients_at_each_stage.png")
-    #
-    # big_bp = remove_one_time_jumps(big_bp)
-    #
-    # big_bp = smooth_outliers(big_bp, threshold_constant=1.5)
-    # for i in range(2, 11):
-    #     big_bp = add_rolling_statistics(big_bp, window_size=i)
-    #
-    # big_bp.to_csv("../preprocess/smooth_bp_eicu2.csv", index=False)
+    pat_at_stage = {}
+    big_bp = load_bp(num_of_pats=0)
+    big_bp = filter_by_nor(big_bp, break_size=30)
+
+    # make bar plot of the amount of patients at each stage with sorted values using plotly
+    pat_at_stage = pd.DataFrame.from_dict(pat_at_stage, orient='index', columns=['Amount of Patients'])
+    pat_at_stage = pat_at_stage.sort_values(by='Amount of Patients', ascending=False)
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=pat_at_stage.index, y=pat_at_stage['Amount of Patients']))
+    # add value labels on top of the bars and make them bigger
+    fig.update_traces(texttemplate='%{y}', textposition='outside', textfont_size=20)
+    fig.update_layout(uniformtext_minsize=20, uniformtext_mode='hide')
+
+    fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
+    # fig.update_layout(title_text='Amount of Patients at Each Stage', title_x=0.5)
+    fig.update_layout(xaxis_title='Stage', yaxis_title='Amount of Patients')
+    # make fig size  big enough to show all labels horizontally
+    fig.update_layout(height=1000, width=1500)
+    # make the labels horizontal
+    fig.update_xaxes(tickangle=0)
+    # make tick labels bigger
+    fig.update_layout(xaxis=dict(tickfont=dict(size=20)))
+    fig.update_layout(yaxis=dict(tickfont=dict(size=20)))
+
+    # make bar width bigger
+    fig.update_traces(marker=dict(line=dict(width=4)))
+
+    # make axis titles bigger
+    fig.update_layout(xaxis=dict(title=dict(font=dict(size=20))))
+    fig.update_layout(yaxis=dict(title=dict(font=dict(size=20))))
+
+    fig.show()
+
+    fig.write_html("../preprocess/patients_at_each_stage.html")
+    fig.write_image("../preprocess/patients_at_each_stage.png")
+
+    big_bp = remove_one_time_jumps(big_bp)
+
+    big_bp = smooth_outliers(big_bp, threshold_constant=1.5)
+    for i in range(2, 11):
+        big_bp = add_rolling_statistics(big_bp, window_size=i)
+
+    big_bp.to_csv("../preprocess/smooth_bp_eicu2.csv", index=False)
 
     pat_at_stage = {}
 
