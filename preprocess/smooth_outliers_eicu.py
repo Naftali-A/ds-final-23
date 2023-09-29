@@ -410,10 +410,10 @@ if __name__ == "__main__":
     fig.update_layout(xaxis=dict(title=dict(font=dict(size=20))))
     fig.update_layout(yaxis=dict(title=dict(font=dict(size=20))))
 
-    # fig.show()
+    fig.show()
 
-    fig.write_html("../plots/preprocess/eicu/patients_at_each_stage.html")
-    fig.write_image("../plots/preprocess/eicu/patients_at_each_stage.png")
+    fig.write_html("../preprocess/patients_at_each_stage.html")
+    fig.write_image("../preprocess/patients_at_each_stage.png")
 
     big_bp = remove_one_time_jumps(big_bp)
 
@@ -424,19 +424,19 @@ if __name__ == "__main__":
     big_bp.to_csv("../preprocess/smooth_bp_eicu2.csv", index=False)
 
     pat_at_stage = {}
-    
+
     big_bp_salz = load_bp_salz()
     big_bp_salz = filter_by_nor(big_bp_salz, break_size=30)
     # make bar plot of the amount of patients at each stage with sorted values using plotly
     pat_at_stage = pd.DataFrame.from_dict(pat_at_stage, orient='index', columns=['Amount of Patients'])
     pat_at_stage = pat_at_stage.sort_values(by='Amount of Patients', ascending=False)
-    
+
     fig = go.Figure()
     fig.add_trace(go.Bar(x=pat_at_stage.index, y=pat_at_stage['Amount of Patients']))
     # add value labels on top of the bars and make them bigger
     fig.update_traces(texttemplate='%{y}', textposition='outside', textfont_size=20)
     fig.update_layout(uniformtext_minsize=20, uniformtext_mode='hide')
-    
+
     fig.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
     # fig.update_layout(title_text='Amount of Patients at Each Stage', title_x=0.5)
     fig.update_layout(xaxis_title='Stage', yaxis_title='Amount of Patients')
@@ -447,22 +447,22 @@ if __name__ == "__main__":
     # make tick labels bigger
     fig.update_layout(xaxis=dict(tickfont=dict(size=20)))
     fig.update_layout(yaxis=dict(tickfont=dict(size=20)))
-    
+
     # make bar width bigger
     fig.update_traces(marker=dict(line=dict(width=4)))
-    
+
     # make axis titles bigger
     fig.update_layout(xaxis=dict(title=dict(font=dict(size=20))))
     fig.update_layout(yaxis=dict(title=dict(font=dict(size=20))))
-    
+
     fig.show()
-    
-    fig.write_html("../plots/preprocess/salzburg/patients_at_each_stage_zalz.html")
-    fig.write_image("../plots/preprocess/salzburg/preprocess/patients_at_each_stage_zalz.png")
-    
+
+    fig.write_html("../preprocess/patients_at_each_stage_zalz.html")
+    fig.write_image("../preprocess/patients_at_each_stage_zalz.png")
+
     big_bp_salz = remove_one_time_jumps(big_bp_salz)
     big_bp_salz = smooth_outliers(big_bp_salz, threshold_constant=1.5)
     for i in range(2, 11):
         big_bp_salz = add_rolling_statistics(big_bp_salz, window_size=i)
-    
+
     big_bp_salz.to_csv("../preprocess/smooth_bp_salz.csv", index=False)

@@ -49,7 +49,7 @@ def filter_bp(bp_path, sepsis_stay_ids):
     return filtered_bp
 
 
-if __name__ == "__main__":
+if '__main__' == __name__:
     # read files
     infusiondrug = pd.read_csv("../data/eICU/infusiondrug.csv")
     diagnosis = pd.read_csv("../data/eICU/diagnosis.csv")
