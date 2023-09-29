@@ -141,6 +141,8 @@ RNLData/bps_with_doses.csv
 # Ignore virtual environments
 venv/
 Scripts/
+environment/
+.idea/
 
 # Ignore compiled Python files
 *.pyc
