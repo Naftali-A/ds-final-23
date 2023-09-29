@@ -2,7 +2,7 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from FinalProjDS.plots23.spliters import apply_split_functions, \
+from spliters import apply_split_functions, \
     group_by_sections_mean_std
 
 BP_RANGES = ((0, 49), (50, 59), (60, 64), (65, 69), (70, 74), (75, 79),
